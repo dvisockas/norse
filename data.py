@@ -49,7 +49,8 @@ class CleanSpeechDataset(Dataset):
     def __getitem__(self, index):
         filename, nth_sample = self.find_filename(index)
         wave, _sample_rate = torchaudio.load(filename)
-        return windows(wave, wsize=self.window_size)[:, nth_sample]
+        sample = windows(wave, wsize=self.window_size)[:, nth_sample]
+        return [sample, sample]
 
     def __len__(self):
         return self.data_len

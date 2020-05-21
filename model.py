@@ -100,4 +100,4 @@ class Autoencoder(nn.Module):
         pre_d_1 = torch.cat((d_2, c_1), dim=1)
         d_1 = self.norm_d_1(self.deconv_1(pre_d_1))
 
-        return d_1
+        return d_1.reshape(128, 16384)
