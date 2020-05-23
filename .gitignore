@@ -1,5 +1,6 @@
 data/*
 __pycache__
 .ipynb_checkpoints
-file-count-cache.json
+.file-count-cache.json
+.noise-count-cache.json
 models/*

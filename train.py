@@ -4,7 +4,7 @@ from torch import nn
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from torchaudio import transforms
-from data import CleanSpeechDataset
+from data import SpeechDataset
 import time
 from model import Autoencoder
 import pdb
@@ -20,7 +20,7 @@ num_epochs = 50
 batch_size = 1024
 learning_rate = 1e-3
 
-dataset = CleanSpeechDataset('data/clean/open_slr/', 16384, 50)
+dataset = SpeechDataset('data/clean/open_slr/360', 'data/clean/noise/', 16384, 50)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
 model = Autoencoder().cuda()
@@ -30,7 +30,7 @@ optimizer = torch.optim.RMSprop(model.parameters(), lr=learning_rate, weight_dec
 model.train()
 for epoch in range(num_epochs):
     start = time.time()
-    
+
     for i, data in enumerate(dataloader):
         sample = data
         sample = Variable(sample).cuda()
@@ -40,7 +40,7 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-    
+
     if epoch == 0:
         time_diff = time.time() - start
         print(f'Epoch took {round(time_diff, 4)}s')

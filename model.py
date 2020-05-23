@@ -5,7 +5,8 @@ from torchaudio import transforms
 import torch.nn.functional as F
 import pdb
 class Autoencoder(nn.Module):
-    def __init__(self):
+    def __init__(self, bs=0):
+        self.bs = bs
         super(Autoencoder, self).__init__()
         
         self.in_dropout = nn.Dropout(p=0.3)
@@ -100,4 +101,4 @@ class Autoencoder(nn.Module):
         pre_d_1 = torch.cat((d_2, c_1), dim=1)
         d_1 = self.norm_d_1(self.deconv_1(pre_d_1))
 
-        return d_1.reshape(128, 16384)
+        return d_1
