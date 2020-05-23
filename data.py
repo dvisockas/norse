@@ -88,4 +88,4 @@ class SpeechDataset(Dataset):
         return [noised_sample, clean_sample]
 
     def __len__(self):
-        return self.data_len
+        return self.data_len - 1
