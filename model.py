@@ -9,8 +9,6 @@ class Autoencoder(nn.Module):
         self.bs = bs
         super(Autoencoder, self).__init__()
         
-        self.in_dropout = nn.Dropout(p=0.3)
-        
         self.conv_1 = nn.Conv1d(1, 16, 32, 2, 15)
         self.norm_1 = nn.PReLU()
         self.conv_2 = nn.Conv1d(16, 32, 32, 2, 15)
@@ -65,7 +63,6 @@ class Autoencoder(nn.Module):
                 nn.init.xavier_normal_(m.weight.data)
 
     def forward(self, x):
-        x = self.in_dropout(x)
         c_1 = self.conv_1(x)
         c_2 = self.conv_2(self.norm_1(c_1))
         c_3 = self.conv_3(self.norm_2(c_2))
