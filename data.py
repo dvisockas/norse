@@ -14,7 +14,7 @@ FILE_COUNT_CACHE = '.file-count-cache.json'
 NOISE_CACHE      = '.noise-count-cache.json'
 
 class SpeechDataset(Dataset):
-    def __init__(self, clean_dir, noise_dir, window_size, overlap):
+    def __init__(self, clean_dir, noise_dir, window_size, overlap, snr = 0):
         self.window_size = window_size
         self.overlap = int(self.window_size * (overlap / 100))
         self.sound_files_list = glob.glob(clean_dir + '*')
@@ -23,6 +23,7 @@ class SpeechDataset(Dataset):
         self.noise_len = 0
         self.sound_files_by_length = dict()
         self.noise_files_by_length = dict()
+        self.snr = snr
 
         if os.path.exists(FILE_COUNT_CACHE):
             with open(FILE_COUNT_CACHE) as json_file:
@@ -80,7 +81,7 @@ class SpeechDataset(Dataset):
             repeat_times = math.ceil(clean_len / noise_len)
             noise_wave = noise_wave.repeat((1, repeat_times))
 
-        noised_wave = torch.add(clean_wave[0, :], noise_wave[0, :clean_len]).reshape(1, -1)
+        noised_wave = torch.add(clean_wave[0, :], noise_wave[0, :clean_len] / self.snr).reshape(1, -1)
 
         clean_sample = windows(clean_wave, wsize=self.window_size)[:, nth_sample]
         noised_sample = windows(noised_wave, wsize=self.window_size)[:, nth_sample]
