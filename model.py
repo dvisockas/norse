@@ -35,7 +35,7 @@ class Autoencoder(nn.Module):
         self.attn_f = nn.Conv1d(1024, 1024, 1)
         self.attn_g = nn.Conv1d(1024, 1024, 1)
         self.attn_h = nn.Conv1d(1024, 1024, 1)
-        
+
         self.deconv_11 = nn.ConvTranspose1d(1024, 512, 32, 2, 15)
         self.norm_d_11 = nn.PReLU()
         self.deconv_10 = nn.ConvTranspose1d(1024, 256, 32, 2, 15)
@@ -81,7 +81,7 @@ class Autoencoder(nn.Module):
         c_11 = self.norm_11(c_11)
         
         # Attention mechanism, adopted from: https://arxiv.org/pdf/1805.08318.pdf
-        # Caveat: this implementation does not transpose attention function f
+        # Caveat: this implementation does not transpose attention function f outputs
         attn_f = self.attn_f(c_11)
         attn_g = self.attn_g(c_11)
         attn_combine = torch.nn.Softmax(dim=1)(attn_f * attn_g)
