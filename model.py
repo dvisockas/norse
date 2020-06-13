@@ -4,58 +4,61 @@ from torch.autograd import Variable
 from torchaudio import transforms
 import torch.nn.functional as F
 import pdb
+
 class Autoencoder(nn.Module):
     def __init__(self, bs=0):
         self.bs = bs
         super(Autoencoder, self).__init__()
-        
-        self.conv_1 = nn.Conv1d(1, 16, 32, 2, 15)
-        self.norm_1 = nn.PReLU()
-        self.conv_2 = nn.Conv1d(16, 32, 32, 2, 15)
-        self.norm_2 = nn.PReLU()
-        self.conv_3 = nn.Conv1d(32, 32, 32, 2, 15)
-        self.norm_3 = nn.PReLU()
-        self.conv_4 = nn.Conv1d(32, 64, 32, 2, 15)
-        self.norm_4 = nn.PReLU()
-        self.conv_5 = nn.Conv1d(64, 64, 32, 2, 15)
-        self.norm_5 = nn.PReLU()
-        self.conv_6 = nn.Conv1d(64, 128, 32, 2, 15)
-        self.norm_6 = nn.PReLU()
-        self.conv_7 = nn.Conv1d(128, 128, 32, 2, 15)
-        self.norm_7 = nn.PReLU()
-        self.conv_8 = nn.Conv1d(128, 256, 32, 2, 15)
-        self.norm_8 = nn.PReLU()
-        self.conv_9 = nn.Conv1d(256, 256, 32, 2, 15)
-        self.norm_9 = nn.PReLU()
-        self.conv_10 = nn.Conv1d(256, 512, 32, 2, 15)
-        self.norm_10 = nn.PReLU()
-        self.conv_11 = nn.Conv1d(512, 1024, 32, 2, 15)
-        self.norm_11 = nn.PReLU()
-        
-        self.attn_f = nn.Conv1d(1024, 1024, 1)
-        self.attn_g = nn.Conv1d(1024, 1024, 1)
-        self.attn_h = nn.Conv1d(1024, 1024, 1)
+
+        padding_mode = 'reflect'
+
+        self.conv_1 = nn.Conv1d(1, 16, 32, 2, 15, padding_mode=padding_mode)
+        self.norm_1 = nn.PReLU(init=0)
+        self.conv_2 = nn.Conv1d(16, 32, 32, 2, 15, padding_mode=padding_mode)
+        self.norm_2 = nn.PReLU(init=0)
+        self.conv_3 = nn.Conv1d(32, 32, 32, 2, 15, padding_mode=padding_mode)
+        self.norm_3 = nn.PReLU(init=0)
+        self.conv_4 = nn.Conv1d(32, 64, 32, 2, 15, padding_mode=padding_mode)
+        self.norm_4 = nn.PReLU(init=0)
+        self.conv_5 = nn.Conv1d(64, 64, 32, 2, 15, padding_mode=padding_mode)
+        self.norm_5 = nn.PReLU(init=0)
+        self.conv_6 = nn.Conv1d(64, 128, 32, 2, 15, padding_mode=padding_mode)
+        self.norm_6 = nn.PReLU(init=0)
+        self.conv_7 = nn.Conv1d(128, 128, 32, 2, 15, padding_mode=padding_mode)
+        self.norm_7 = nn.PReLU(init=0)
+        self.conv_8 = nn.Conv1d(128, 256, 32, 2, 15, padding_mode=padding_mode)
+        self.norm_8 = nn.PReLU(init=0)
+        self.conv_9 = nn.Conv1d(256, 256, 32, 2, 15, padding_mode=padding_mode)
+        self.norm_9 = nn.PReLU(init=0)
+        self.conv_10 = nn.Conv1d(256, 512, 32, 2, 15, padding_mode=padding_mode)
+        self.norm_10 = nn.PReLU(init=0)
+        self.conv_11 = nn.Conv1d(512, 1024, 32, 2, 15, padding_mode=padding_mode)
+        self.norm_11 = nn.PReLU(init=0)
+
+        self.attn_f = nn.Conv1d(1024, 1024, 1, padding_mode=padding_mode)
+        self.attn_g = nn.Conv1d(1024, 1024, 1, padding_mode=padding_mode)
+        self.attn_h = nn.Conv1d(1024, 1024, 1, padding_mode=padding_mode)
 
         self.deconv_11 = nn.ConvTranspose1d(1024, 512, 32, 2, 15)
-        self.norm_d_11 = nn.PReLU()
+        self.norm_d_11 = nn.PReLU(init=0)
         self.deconv_10 = nn.ConvTranspose1d(1024, 256, 32, 2, 15)
-        self.norm_d_10 = nn.PReLU()
+        self.norm_d_10 = nn.PReLU(init=0)
         self.deconv_9 = nn.ConvTranspose1d(512, 256, 32, 2, 15)
-        self.norm_d_9 = nn.PReLU()
+        self.norm_d_9 = nn.PReLU(init=0)
         self.deconv_8 = nn.ConvTranspose1d(512, 128, 32, 2, 15)
-        self.norm_d_8 = nn.PReLU()
+        self.norm_d_8 = nn.PReLU(init=0)
         self.deconv_7 = nn.ConvTranspose1d(256, 128, 32, 2, 15)
-        self.norm_d_7 = nn.PReLU()
+        self.norm_d_7 = nn.PReLU(init=0)
         self.deconv_6 = nn.ConvTranspose1d(256, 64, 32, 2, 15)
-        self.norm_d_6 = nn.PReLU()
+        self.norm_d_6 = nn.PReLU(init=0)
         self.deconv_5 = nn.ConvTranspose1d(128, 64, 32, 2, 15)
-        self.norm_d_5 = nn.PReLU()
+        self.norm_d_5 = nn.PReLU(init=0)
         self.deconv_4 = nn.ConvTranspose1d(128, 32, 32, 2, 15)
-        self.norm_d_4 = nn.PReLU()
+        self.norm_d_4 = nn.PReLU(init=0)
         self.deconv_3 = nn.ConvTranspose1d(64, 32, 32, 2, 15)
-        self.norm_d_3 = nn.PReLU()
+        self.norm_d_3 = nn.PReLU(init=0)
         self.deconv_2 = nn.ConvTranspose1d(64, 16, 32, 2, 15)
-        self.norm_d_2 = nn.PReLU()
+        self.norm_d_2 = nn.PReLU(init=0)
         self.deconv_1 = nn.ConvTranspose1d(32, 1, 32, 2, 15)
         self.norm_d_1 = nn.Tanh()
 
@@ -79,7 +82,7 @@ class Autoencoder(nn.Module):
         c_10 = self.conv_10(self.norm_9(c_9))
         c_11 = self.conv_11(self.norm_10(c_10))
         c_11 = self.norm_11(c_11)
-        
+
         # Attention mechanism, adopted from: https://arxiv.org/pdf/1805.08318.pdf
         # Caveat: this implementation does not transpose attention function f outputs
         attn_f = self.attn_f(c_11)
@@ -87,7 +90,7 @@ class Autoencoder(nn.Module):
         attn_combine = torch.nn.Softmax(dim=1)(attn_f * attn_g)
         attn_h = self.attn_h(c_11)
         attn_out = attn_h * attn_combine
-        
+
         d_11 = self.deconv_11(attn_out)
         pre_d_10 = torch.cat((d_11, c_10), dim=1)
         d_10 = self.norm_d_10(self.deconv_10(pre_d_10))
