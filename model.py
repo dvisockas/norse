@@ -6,8 +6,9 @@ import torch.nn.functional as F
 import pdb
 
 class Autoencoder(nn.Module):
-    def __init__(self, bs=0):
+    def __init__(self, bs=0, payAttention=True):
         self.bs = bs
+        self.attn = payAttention
         super(Autoencoder, self).__init__()
 
         padding_mode = 'reflect'
@@ -56,10 +57,10 @@ class Autoencoder(nn.Module):
         self.norm_11 = nn.BatchNorm1d(1024)
         self.act_11 = nn.PReLU(init=0)
 
-
-        self.attn_f = nn.Conv1d(1024, 1024, 1)
-        self.attn_g = nn.Conv1d(1024, 1024, 1)
-        self.attn_h = nn.Conv1d(1024, 1024, 1)
+        if self.attn:
+            self.attn_f = nn.Conv1d(1024, 1024, 1)
+            self.attn_g = nn.Conv1d(1024, 1024, 1)
+            self.attn_h = nn.Conv1d(1024, 1024, 1)
 
         self.deconv_11 = nn.ConvTranspose1d(1024, 512, 32, 2, 15)
         self.act_d_11 = nn.PReLU(init=0)
@@ -107,13 +108,14 @@ class Autoencoder(nn.Module):
 
         # Attention mechanism, adopted from: https://arxiv.org/pdf/1805.08318.pdf
         # Caveat: this implementation does not transpose attention function f outputs
-        attn_f = self.attn_f(c_11)
-        attn_g = self.attn_g(c_11)
-        attn_combine = torch.nn.Softmax(dim=1)(attn_f * attn_g)
-        attn_h = self.attn_h(c_11)
-        attn_out = attn_h * attn_combine
-
-        d_11 = self.deconv_11(attn_out)
+        if self.attn:
+            attn_f = self.attn_f(c_11)
+            attn_g = self.attn_g(c_11)
+            attn_combine = torch.nn.Softmax(dim=1)(attn_f * attn_g)
+            attn_h = self.attn_h(c_11)
+            attn_out = attn_h * attn_combine
+        
+        d_11 = self.deconv_11(if self.attn: attn_out else: c_11)
         pre_d_10 = torch.cat((d_11, c_10), dim=1)
         d_10 = self.act_d_10(self.deconv_10(pre_d_10))
         pre_d_9 = torch.cat((d_10, c_9), dim=1)
