@@ -14,7 +14,7 @@ FILE_COUNT_CACHE = '.file-count-cache.json'
 NOISE_CACHE      = '.noise-count-cache.json'
 
 class SpeechDataset(Dataset):
-    def __init__(self, clean_dir, noise_dir, window_size, overlap, snr = 0):
+    def __init__(self, clean_dir, noise_dir, window_size, overlap, snr = 0, limit_samples = 0):
         self.window_size = window_size
         self.overlap = int(self.window_size * (overlap / 100))
         self.sound_files_list = glob.glob(clean_dir + '*')
@@ -23,6 +23,7 @@ class SpeechDataset(Dataset):
         self.noise_len = 0
         self.sound_files_by_length = dict()
         self.noise_files_by_length = dict()
+        self.limit_samples = limit_samples
         self.snr = snr
 
         if os.path.exists(FILE_COUNT_CACHE):
@@ -89,4 +90,4 @@ class SpeechDataset(Dataset):
         return [noised_sample, clean_sample]
 
     def __len__(self):
-        return self.data_len - 1
+        return self.limit_samples if self.limit_samples > 0 else (self.data_len - 1)

@@ -6,9 +6,9 @@ import torch.nn.functional as F
 import pdb
 
 class Autoencoder(nn.Module):
-    def __init__(self, bs=0, payAttention=True):
+    def __init__(self, bs=0, pay_attention=True):
         self.bs = bs
-        self.attn = payAttention
+        self.attn = pay_attention
         super(Autoencoder, self).__init__()
 
         padding_mode = 'reflect'
@@ -114,8 +114,8 @@ class Autoencoder(nn.Module):
             attn_combine = torch.nn.Softmax(dim=1)(attn_f * attn_g)
             attn_h = self.attn_h(c_11)
             attn_out = attn_h * attn_combine
-        
-        d_11 = self.deconv_11(if self.attn: attn_out else: c_11)
+
+        d_11 = self.deconv_11(attn_out if self.attn else c_11)
         pre_d_10 = torch.cat((d_11, c_10), dim=1)
         d_10 = self.act_d_10(self.deconv_10(pre_d_10))
         pre_d_9 = torch.cat((d_10, c_9), dim=1)
