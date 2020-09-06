@@ -10,13 +10,15 @@ import json
 import os
 import math
 
-FILE_COUNT_CACHE = '.file-count-cache.json'
-NOISE_CACHE      = '.noise-count-cache.json'
+torchaudio.set_audio_backend('sox_io')
+
+FILE_COUNT_CACHE = './data/.file-count-cache.json'
+NOISE_CACHE      = './data/.noise-count-cache.json'
 
 class SpeechDataset(Dataset):
-    def __init__(self, clean_dir, noise_dir, window_size, overlap, snr = 0, limit_samples = 0):
+    def __init__(self, clean_dir, noise_dir, window_size, overlap, snr = 0, limit_samples = 0, output_one=False):
         self.window_size = window_size
-        self.overlap = int(self.window_size * (overlap / 100))
+        self.overlap = overlap
         self.sound_files_list = glob.glob(clean_dir + '*')
         self.noise_files_list = glob.glob(noise_dir + '*')
         self.data_len = 0
@@ -25,15 +27,16 @@ class SpeechDataset(Dataset):
         self.noise_files_by_length = dict()
         self.limit_samples = limit_samples
         self.snr = snr
+        self.output_one = output_one
 
         if os.path.exists(FILE_COUNT_CACHE):
             with open(FILE_COUNT_CACHE) as json_file:
                 self.sound_files_by_length = json.load(json_file)
-            self.data_len = sum([length for filename, length in self.sound_files_by_length.items()])
+            self.data_len = sum([length // self.window_size for filename, length in self.sound_files_by_length.items()])
         else:
             for filename in self.sound_files_list:
                 wave, _sample_rate = torchaudio.load(filename)
-                sample_length = len(wave.T) // self.window_size
+                sample_length = len(wave.T)
                 self.data_len += sample_length
                 self.sound_files_by_length[filename] = sample_length
 
@@ -45,11 +48,11 @@ class SpeechDataset(Dataset):
         if os.path.exists(NOISE_CACHE):
             with open(NOISE_CACHE) as json_file:
                 self.noise_files_by_length = json.load(json_file)
-            self.noise_len = sum([length for filename, length in self.noise_files_by_length.items()])
+            self.noise_len = sum([length // self.window_size for filename, length in self.noise_files_by_length.items()])
         else:
             for filename in self.noise_files_list:
                 wave, _sample_rate = torchaudio.load(filename)
-                sample_length = len(wave.T) // self.window_size
+                sample_length = len(wave.T)
                 self.noise_len += sample_length
                 self.noise_files_by_length[filename] = sample_length
 
@@ -61,10 +64,12 @@ class SpeechDataset(Dataset):
 
     def find_filename(self, index):
         counter = -1
+
         for filename, count in self.sound_files_by_length.items():
-            counter += count
+            windows_count = count // self.window_size
+            counter += windows_count
             if index < counter:
-                return (filename, index - (counter - count))
+                return (filename, index - (counter - windows_count))
 
     def find_noisefile(self, index):
         return self.noise_file_names[int((index / self.data_len) * len(self.noise_file_names))]
@@ -84,8 +89,12 @@ class SpeechDataset(Dataset):
 
         noised_wave = torch.add(clean_wave[0, :], noise_wave[0, :clean_len] / self.snr).reshape(1, -1)
 
-        clean_sample = windows(clean_wave, wsize=self.window_size)[:, nth_sample]
-        noised_sample = windows(noised_wave, wsize=self.window_size)[:, nth_sample]
+        window_args = { "wsize": self.window_size, "overlap": self.overlap }
+
+        clean_sample = windows(clean_wave, **window_args)[:, nth_sample]
+        noised_sample = windows(noised_wave, **window_args)[:, nth_sample]
+
+        if self.output_one: clean_sample = clean_sample[:, -1]
 
         return [noised_sample, clean_sample]
 

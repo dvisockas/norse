@@ -1,8 +1,5 @@
 import torch
 from torch import nn
-from torch.autograd import Variable
-from torchaudio import transforms
-import torch.nn.functional as F
 import pdb
 
 class Autoencoder(nn.Module):
