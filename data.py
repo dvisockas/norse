@@ -1,5 +1,6 @@
 import torch
 import torchaudio
+from torchaudio.transforms import *
 from pathlib import Path
 import numpy as np
 import glob
@@ -94,7 +95,7 @@ class SpeechDataset(Dataset):
         clean_sample = windows(clean_wave, **window_args)[:, nth_sample]
         noised_sample = windows(noised_wave, **window_args)[:, nth_sample]
 
-        if self.output_one: clean_sample = clean_sample[:, -1]
+        if self.output_one: clean_sample = MuLawEncoding()(clean_sample[:, -1])
 
         return [noised_sample, clean_sample]
 

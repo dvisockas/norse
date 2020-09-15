@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torchaudio.transforms import *
 import pdb
 
 class Wavenetish(nn.Module):
@@ -53,15 +54,15 @@ class Wavenetish(nn.Module):
         self.conv_11 = nn.Conv1d(512, 1024, 32, 2, 15, padding_mode=padding_mode)
         self.norm_11 = nn.BatchNorm1d(1024)
 
-        self.act_11 = nn.Tanh()
+        self.act_11 = nn.PReLU(init=0)
 
         if self.attn:
             self.attn_f = nn.Conv1d(512, 1024, 1)
             self.attn_g = nn.Conv1d(512, 1024, 1)
             self.attn_h = nn.Conv1d(512, 1024, 1)
 
-        self.fc_1 = nn.Linear(8192, 4096)
-        self.fc_2 = nn.Linear(4096, 1)
+        self.fc_1 = nn.Linear(4096, 2048)
+        self.fc_2 = nn.Linear(2048, 255)
 
         self.init_weights()
 
@@ -85,7 +86,7 @@ class Wavenetish(nn.Module):
         if self.attn:
             attn_f = self.attn_f(c_10)
             attn_g = self.attn_g(c_10)
-            attn_combine = torch.nn.Softmax(dim=1)(attn_f * attn_g)
+            attn_combine = nn.Softmax(dim=1)(attn_f * attn_g)
             attn_h = self.attn_h(c_10)
             attn_out = attn_h * attn_combine
 
@@ -93,5 +94,5 @@ class Wavenetish(nn.Module):
 
         fc_1 = self.fc_1(torch.flatten(c_10, start_dim=1))
         fc_2 = self.fc_2(fc_1)
-
         return fc_2
+        # return nn.Softmax(dim=1)(fc_2)
