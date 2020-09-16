@@ -17,7 +17,18 @@ FILE_COUNT_CACHE = './data/.file-count-cache.json'
 NOISE_CACHE      = './data/.noise-count-cache.json'
 
 class SpeechDataset(Dataset):
-    def __init__(self, clean_dir, noise_dir, window_size, overlap, snr = 0, limit_samples = 0, output_one=False):
+    def __init__(
+        self,
+        clean_dir,
+        noise_dir,
+        window_size,
+        overlap,
+        snr = 0,
+        limit_samples = 0,
+        output_one=False,
+        window_step=None,
+    ):
+        self.window_step = window_step
         self.window_size = window_size
         self.overlap = overlap
         self.sound_files_list = glob.glob(clean_dir + '*')
@@ -67,10 +78,16 @@ class SpeechDataset(Dataset):
         counter = -1
 
         for filename, count in self.sound_files_by_length.items():
-            windows_count = count // self.window_size
-            counter += windows_count
-            if index < counter:
-                return (filename, index - (counter - windows_count))
+            if self.window_step:
+                windows_count = count // self.window_size
+                counter += windows_count
+                if index < counter:
+                    return (filename, index - (counter - windows_count))
+            else:
+                windows_count = count - (self.window_size)
+                counter += windows_count
+                if index < counter:
+                    return (filename, index - (counter - windows_count))
 
     def find_noisefile(self, index):
         return self.noise_file_names[int((index / self.data_len) * len(self.noise_file_names))]
@@ -90,7 +107,7 @@ class SpeechDataset(Dataset):
 
         noised_wave = torch.add(clean_wave[0, :], noise_wave[0, :clean_len] / self.snr).reshape(1, -1)
 
-        window_args = { "wsize": self.window_size, "overlap": self.overlap }
+        window_args = { "wsize": self.window_size, "overlap": self.overlap, "step": self.window_step }
 
         clean_sample = windows(clean_wave, **window_args)[:, nth_sample]
         noised_sample = windows(noised_wave, **window_args)[:, nth_sample]
