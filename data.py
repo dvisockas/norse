@@ -74,6 +74,9 @@ class SpeechDataset(Dataset):
             f.close()
         self.noise_file_names = list(self.noise_files_by_length.keys())
 
+    def normalize(self, sample):
+        return (sample-sample.mean()) / sample.std()
+
     def find_filename(self, index):
         counter = -1
 
@@ -95,8 +98,8 @@ class SpeechDataset(Dataset):
     def __getitem__(self, index):
         clean_file, nth_sample = self.find_filename(index)
         noise_file = self.find_noisefile(index)
-        noise_wave = torchaudio.load(noise_file)[0]
-        clean_wave = torchaudio.load(clean_file)[0]
+        noise_wave = self.normalize(torchaudio.load(noise_file)[0])
+        clean_wave = self.normalize(torchaudio.load(clean_file)[0])
 
         noise_len = len(noise_wave[0, :])
         clean_len = len(clean_wave[0, :])
