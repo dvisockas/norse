@@ -108,7 +108,7 @@ class Autoencoder(nn.Module):
         if self.attn:
             attn_f = self.attn_f(c_11)
             attn_g = self.attn_g(c_11)
-            attn_combine = torch.nn.Softmax(dim=1)(attn_f * attn_g)
+            attn_combine = nn.Softmax(dim=1)(attn_f * attn_g)
             attn_h = self.attn_h(c_11)
             attn_out = attn_h * attn_combine
 
