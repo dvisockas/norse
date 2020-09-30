@@ -46,7 +46,6 @@ class SpeechDataset(Dataset):
                 self.sound_files_by_length = json.load(json_file)
             self.data_len = sum([length // self.window_size for filename, length in self.sound_files_by_length.items()])
         else:
-            print('Building sound file cache')
             for filename in self.sound_files_list:
                 wave, _sample_rate = torchaudio.load(filename)
                 sample_length = len(wave.T)
@@ -63,7 +62,6 @@ class SpeechDataset(Dataset):
                 self.noise_files_by_length = json.load(json_file)
             self.noise_len = sum([length // self.window_size for filename, length in self.noise_files_by_length.items()])
         else:
-            print('Building noise file cache')
             for filename in self.noise_files_list:
                 wave, _sample_rate = torchaudio.load(filename)
                 sample_length = len(wave.T)
@@ -77,22 +75,18 @@ class SpeechDataset(Dataset):
         self.noise_file_names = list(self.noise_files_by_length.keys())
 
     def normalize(self, sample):
-        return (sample-sample.mean()) / sample.std()
+        # return (sample-sample.mean()) / sample.std()
+        return sample
 
     def find_filename(self, index):
         counter = -1
 
         for filename, count in self.sound_files_by_length.items():
-            if self.window_step:
-                windows_count = count // self.window_size
-                counter += windows_count
-                if index < counter:
-                    return (filename, index - (counter - windows_count))
-            else:
-                windows_count = count - (self.window_size)
-                counter += windows_count
-                if index < counter:
-                    return (filename, windows_count - counter)
+            windows_count = count // self.window_size
+            counter += windows_count
+
+            if index < counter:
+                return (filename, index - (counter - windows_count))
 
     def find_noisefile(self, index):
         return self.noise_file_names[int((index / self.data_len) * len(self.noise_file_names))]
@@ -112,8 +106,8 @@ class SpeechDataset(Dataset):
 
         noised_wave = torch.add(clean_wave[0, :], noise_wave[0, :clean_len] / self.snr).reshape(1, -1)
 
-        window_args = { "wsize": self.window_size, "overlap": self.overlap }#, "step": self.window_step }
-        # import pdb; pdb.set_trace()
+        window_args = { "window_size": self.window_size, "overlap": self.overlap }#, "step": self.window_step }
+
         clean_sample = windows(clean_wave, **window_args)[:, nth_sample]
         noised_sample = windows(noised_wave, **window_args)[:, nth_sample]
 

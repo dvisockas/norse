@@ -11,7 +11,7 @@ class Autoencoder(nn.Module):
         channels_in   = 1,
         channels_out  = 1,
         growth_factor = 16,
-        kernel_size   = 32
+        kernel_size   = 16
     ):
         self.bs = bs
         self.attn = pay_attention
@@ -33,7 +33,7 @@ class Autoencoder(nn.Module):
             encode = []
             encode += [
                 nn.Conv1d(
-                    encoder_ch_in, encoder_ch_out, self.kernel_size, 2, 15, padding_mode=padding_mode, bias=False,
+                    encoder_ch_in, encoder_ch_out, self.kernel_size, stride=2, padding=7, padding_mode=padding_mode, bias=False,
                 ),
                 nn.BatchNorm1d(encoder_ch_out),
                 nn.GELU(),
@@ -51,7 +51,7 @@ class Autoencoder(nn.Module):
             decode = []
             decode += [
                 nn.ConvTranspose1d(
-                    decoder_ch_in, decoder_ch_out, self.kernel_size, 2, 15, bias = False,
+                    decoder_ch_in, decoder_ch_out, self.kernel_size, stride=2, padding=7, bias=False,
                 ),
                 nn.BatchNorm1d(decoder_ch_out),
             ]
