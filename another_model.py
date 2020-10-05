@@ -51,7 +51,7 @@ class Autoencoder(nn.Module):
             decode = []
             decode += [
                 nn.ConvTranspose1d(
-                    decoder_ch_in, decoder_ch_out, self.kernel_size, stride=2, padding=7, bias=False,
+                    decoder_ch_in, decoder_ch_out, self.kernel_size, stride=self.kernel_size, padding=7, bias=False,
                 ),
                 nn.BatchNorm1d(decoder_ch_out),
             ]
