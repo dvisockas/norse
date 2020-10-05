@@ -48,10 +48,12 @@ class Autoencoder(nn.Module):
 
             decoder_ch_out = max(decoder_ch_out, 1)
 
+            stride = self.kernel_size if decoder_ch_out == 0 else 1
+
             decode = []
             decode += [
                 nn.ConvTranspose1d(
-                    decoder_ch_in, decoder_ch_out, self.kernel_size, stride=self.kernel_size, padding=7, bias=False,
+                    decoder_ch_in, decoder_ch_out, self.kernel_size, stride=stride, padding=7, bias=False,
                 ),
                 nn.BatchNorm1d(decoder_ch_out),
             ]
