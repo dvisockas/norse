@@ -54,14 +54,15 @@ class Autoencoder(nn.Module):
             decode += [
                 nn.ConvTranspose1d(
                     decoder_ch_in, decoder_ch_out, self.kernel_size, stride=stride, padding=7, bias=False,
-                ),
-                nn.BatchNorm1d(decoder_ch_out),
+                )
             ]
 
             # activation = nn.Tanh() if decoder_ch_out == 1 else nn.GELU()
 
             activation = nn.GELU()
-            if decoder_ch_out > 1: decode.append(activation)
+            if decoder_ch_out > 1:
+                decode.append(nn.BatchNorm1d(decoder_ch_out))
+                decode.append(activation)
 
             self.decoder.append(nn.Sequential(*decode))
 
