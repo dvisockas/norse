@@ -67,7 +67,7 @@ class Autoencoder(nn.Module):
                 ]
             elif self.upsample_type == 'conv':
                 decode += [
-                    nn.Upsample(max(decoder_ch_out // decoder_ch_in, 1)),
+                    nn.Upsample(decoder_ch_out),
                     nn.Conv1d(decoder_ch_out, decoder_ch_out, self.kernel_size, stride=stride, padding=7, bias=False)
                 ]
 
