@@ -5,3 +5,4 @@ __pycache__
 .noise-count-cache.json
 .noise-count-cache.json
 models/*
+checkpoints/*
