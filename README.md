@@ -11,7 +11,7 @@ The work is inspired by SEGAN and DEMUCS architectures. Both of them follow a si
 
 Input -> Encoder -> Bottleneck ops (RNN, Noise sampling, w/e) -> Decoder -> Output <--> Loss func (D in case of SEGAN, MSE in demucs)
 
-The idea is to explore what are the best bottleneck operations, loss funcs, optimal depth, upsampling methods and so on.
+The idea is to explore what are the best bottleneck operations, loss funcs, optimal depth, upsampling methods, skip operations and so on.
 
 ### Motivation
 I really liked the design of SEGAN, but GANs are rather unstable and deconv layers lead to checkerboard patterns (buzzing in 1D space).
