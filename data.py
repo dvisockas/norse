@@ -10,11 +10,49 @@ from utils import windows
 import json
 import os
 import math
+import random
 
 torchaudio.set_audio_backend('sox_io')
 
 FILE_COUNT_CACHE = './data/.file-count-cache.json'
 NOISE_CACHE      = './data/.noise-count-cache.json'
+
+class NoisySpeechDataset(Dataset):
+    def __init__(
+        self,
+        base_dir,
+        window_size = 1
+    ):
+        self.base_dir = base_dir
+        self.window_size = window_size
+        self.files = os.listdir(os.path.join(base_dir, 'clean'))
+
+    def __getitem__(self, index: int) -> list:
+        filename = self.files[index]
+        clean_path = os.path.join(self.base_dir, 'clean', filename)
+        noisy_path = os.path.join(self.base_dir, 'noisy', filename)
+        return self.get_audio(clean_path, noisy_path)
+        
+    def get_audio(self, clean_path, noisy_path):
+        clean_audio, _sr = torchaudio.load(clean_path)
+        noisy_audio, sr = torchaudio.load(noisy_path)
+        
+        window_size = self.window_size * sr
+        audiosize = clean_audio.shape[-1]
+
+        if audiosize <= window_size:
+            shortage = window_size - audiosize
+            clean_audio    = torch.nn.functional.pad(clean_audio, (0, shortage))
+            noisy_audio    = torch.nn.functional.pad(noisy_audio, (0, shortage))
+            return [noisy_audio, clean_audio]
+        else:
+            cut_point = int(random.random() * (audiosize - window_size))
+            clean_audio = clean_audio[:, cut_point:cut_point+window_size]
+            noisy_audio = noisy_audio[:, cut_point:cut_point+window_size]
+            return [noisy_audio, clean_audio]
+
+    def __len__(self):
+        return len(self.files)
 
 class SpeechDataset(Dataset):
     def __init__(

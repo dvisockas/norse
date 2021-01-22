@@ -3,11 +3,11 @@ from torch import nn
 
 UPSAMPLE_TYPES  = ['transpose', 'conv']
 ATTENTION_TYPES = ['SAP', 'ASP']
+SKIP_OP_TYPES   = ['add', 'cat']
 
 class Autoencoder(nn.Module):
     def __init__(
         self,
-        bs            = 0,
         pay_attention = True,
         encoder_type  = 'SAP',
         depth         = 6,
@@ -15,10 +15,12 @@ class Autoencoder(nn.Module):
         channels_out  = 1,
         growth_factor = 16,
         kernel_size   = 16,
-        upsample_type = 'transpose'
+        upsample_type = 'transpose',
+        skip_op       = 'add'
     ):
-        self.bs = bs
         self.attn = pay_attention
+        self.depth = depth
+        self.growth_factor = growth_factor
         self.encoder_type = encoder_type
         assert(encoder_type in ATTENTION_TYPES)
 
@@ -28,8 +30,12 @@ class Autoencoder(nn.Module):
             assert(upsample_type in UPSAMPLE_TYPES)
 
         self.padding_mode = 'reflect'
+        
+        assert(skip_op in SKIP_OP_TYPES)
+        self.skip_op = skip_op
 
         super(Autoencoder, self).__init__()
+        self.bootstrap()
 
     def bootstrap(self):
         self.encoder = nn.ModuleList()
@@ -50,10 +56,11 @@ class Autoencoder(nn.Module):
 
             self.encoder.append(nn.Sequential(*encode))
 
-            channel_multiplier = 2
-
-            decoder_ch_in = (self.growth_factor * (self.depth-index)) * channel_multiplier
-            decoder_ch_out = ((self.growth_factor * (self.depth-index-1)) * channel_multiplier) // 2
+            channel_multiplier = 2 if self.skip_op == 'cat' else 1
+            
+            growth = self.growth_factor * channel_multiplier
+            decoder_ch_in = growth * (self.depth-index)
+            decoder_ch_out = (growth * (self.depth-index-1)) // 2
             decoder_ch_out = max(decoder_ch_out, 1)
 
             stride = self.kernel_size if decoder_ch_out == 0 else 1
@@ -111,6 +118,12 @@ class Autoencoder(nn.Module):
             x = torch.cat((mu,sg), 1)
 
         return x
+    
+    def resolve_skip_op(self, skip_in, another_skip_in):
+        if self.skip_op == 'add':
+            return skip_in + another_skip_in
+        elif self.skip_op == 'cat':
+            return torch.cat((skip_in, another_skip_in), dim=1)
 
     def forward(self, x):
         saved = [x]
@@ -123,6 +136,7 @@ class Autoencoder(nn.Module):
         for _idx, decode in enumerate(self.decoder):
             encoder_output = saved.pop(-1)
             # TODO: Make cat or enc_out+x a parameter in the network
+            layer_in = self.resolve_skip_op(encoder_output, x)
             layer_in = torch.cat((encoder_output, x), dim=1)
             x = decode(layer_in)
 
