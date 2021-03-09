@@ -60,10 +60,12 @@ class Autoencoder(nn.Module):
             
             growth = self.growth_factor * channel_multiplier
             decoder_ch_in = growth * (self.depth-index)
-            decoder_ch_out = (growth * (self.depth-index-1)) // 2
+            decoder_ch_out = (growth * (self.depth-index-1)) #// 2
             decoder_ch_out = max(decoder_ch_out, 1)
 
             stride = self.kernel_size if decoder_ch_out == 0 else 1
+            # TODO: Ensure that stride is a mod of kernel size and matches in skip connections
+            stride = 2
 
             decode = []
             if self.upsample_type == 'transpose':
@@ -78,9 +80,9 @@ class Autoencoder(nn.Module):
                     nn.Conv1d(decoder_ch_out, decoder_ch_out, self.kernel_size, stride=stride, padding=7, bias=False)
                 ]
 
-            # activation = nn.Tanh() if decoder_ch_out == 1 else nn.GELU()
+            activation = nn.Tanh() if decoder_ch_out == 1 else nn.GELU()
 
-            activation = nn.GELU()
+            #activation = nn.GELU()
             if decoder_ch_out > 1:
                 decode.append(nn.BatchNorm1d(decoder_ch_out))
                 decode.append(activation)
@@ -96,7 +98,10 @@ class Autoencoder(nn.Module):
             nn.Softmax(dim=1),
             )
 
-        self.resolver = nn.Conv1d(1, 1, kernel_size=1, bias=True)
+        self.resolver = nn.Sequential(
+            nn.Conv1d(1, 1, kernel_size=1, bias=True),
+            nn.Tanh()
+        )
         # self.init_weights()
 
     def init_weights(self):
@@ -107,10 +112,10 @@ class Autoencoder(nn.Module):
     def attend(self, x):
         w = self.attention(x)
 
-        if self.encoder_type == "SAP":
+        if self.encoder_type == 'SAP':
             x = x * w
             # x = torch.sum(x * w, dim=2)
-        elif self.encoder_type == "ASP":
+        elif self.encoder_type == 'ASP':
             mu = torch.sum(x * w, dim=2)
             sg = torch.sqrt(
                 (torch.sum((x**2) * w, dim=2) - mu**2).clamp(min=1e-5)
@@ -133,11 +138,10 @@ class Autoencoder(nn.Module):
 
         x = self.attend(x)
 
-        for _idx, decode in enumerate(self.decoder):
+        for decode in self.decoder:
             encoder_output = saved.pop(-1)
-            # TODO: Make cat or enc_out+x a parameter in the network
             layer_in = self.resolve_skip_op(encoder_output, x)
-            layer_in = torch.cat((encoder_output, x), dim=1)
+            #layer_in = torch.cat((encoder_output, x), dim=1)
             x = decode(layer_in)
 
         x = self.resolver(x)
