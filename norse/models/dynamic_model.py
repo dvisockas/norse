@@ -125,6 +125,8 @@ class Autoencoder(nn.Module):
         return x
     
     def resolve_skip_op(self, skip_in, another_skip_in):
+        print(skip_in.shape)
+        print(another_skip_in.shape)
         if self.skip_op == 'add':
             return skip_in + another_skip_in
         elif self.skip_op == 'cat':
