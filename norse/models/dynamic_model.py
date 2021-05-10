@@ -8,7 +8,7 @@ SKIP_OP_TYPES   = ['add', 'cat']
 class Autoencoder(nn.Module):
     def __init__(
         self,
-        pay_attention = True,
+        pay_attention = False,
         encoder_type  = 'SAP',
         depth         = 6,
         channels_in   = 1,
@@ -48,7 +48,7 @@ class Autoencoder(nn.Module):
             encode = []
             encode += [
                 nn.Conv1d(
-                    encoder_ch_in, encoder_ch_out, self.kernel_size, stride=2, padding=7, padding_mode=self.padding_mode, bias=False,
+                    encoder_ch_in, encoder_ch_out, self.kernel_size, stride=2, padding=15, padding_mode=self.padding_mode, bias=False,
                 ),
                 nn.BatchNorm1d(encoder_ch_out),
                 nn.GELU(),
@@ -71,7 +71,7 @@ class Autoencoder(nn.Module):
             if self.upsample_type == 'transpose':
                 decode += [
                     nn.ConvTranspose1d(
-                        decoder_ch_in, decoder_ch_out, self.kernel_size, stride=stride, padding=7, bias=False,
+                        decoder_ch_in, decoder_ch_out, self.kernel_size, stride=stride, padding=15, bias=False,
                     )
                 ]
             elif self.upsample_type == 'conv':
@@ -125,8 +125,6 @@ class Autoencoder(nn.Module):
         return x
     
     def resolve_skip_op(self, skip_in, another_skip_in):
-        print(skip_in.shape)
-        print(another_skip_in.shape)
         if self.skip_op == 'add':
             return skip_in + another_skip_in
         elif self.skip_op == 'cat':
@@ -135,17 +133,18 @@ class Autoencoder(nn.Module):
     def forward(self, x):
         saved = [x]
         for encode in self.encoder:
+            print(x.shape)
             x = encode(x)
             saved.append(x)
-
+        print(x.shape)
         x = self.attend(x)
-
         for decode in self.decoder:
+            print(x.shape)
             encoder_output = saved.pop(-1)
             layer_in = self.resolve_skip_op(encoder_output, x)
             #layer_in = torch.cat((encoder_output, x), dim=1)
             x = decode(layer_in)
-
+        print(x.shape)
         x = self.resolver(x)
 
         return x
