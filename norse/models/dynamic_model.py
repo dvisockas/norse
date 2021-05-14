@@ -37,6 +37,7 @@ class Autoencoder(nn.Module):
 
         super(Autoencoder, self).__init__()
         self.bootstrap()
+        
 
     def bootstrap(self):
         self.encoder = nn.ModuleList()
@@ -46,15 +47,22 @@ class Autoencoder(nn.Module):
         for index in range(self.depth):
             encoder_ch_in = max(self.growth_factor * (index), 1)
             encoder_ch_out = self.growth_factor * (index + 1)
-            norm = nn.BatchNorm1d if self.norm == 'batch' else nn.LayerNorm
+            
+            if self.norm == 'batch':
+                enc_norm = nn.BatchNorm1d(encoder_ch_out)
+            else:
+                enc_norm = nn.LayerNorm((encoder_ch_out))
+            
+            #activation = nn.PReLU()
+            activation = nn.ReLU()
             
             encode = []
             encode += [
                 nn.Conv1d(
                     encoder_ch_in, encoder_ch_out, self.kernel_size, stride=2, padding=15, padding_mode=self.padding_mode, bias=False,
                 ),
-                norm(encoder_ch_out),
-                nn.GELU(),
+                nn.BatchNorm1d(encoder_ch_out),
+                activation,
             ]
 
             self.encoder.append(nn.Sequential(*encode))
@@ -81,15 +89,15 @@ class Autoencoder(nn.Module):
                 ]
             elif self.upsample_type == 'conv':
                 decode += [
-                    nn.Upsample(decoder_ch_out),
-                    nn.Conv1d(decoder_ch_out, decoder_ch_out, self.kernel_size, stride=stride, padding=7, bias=False)
+                    nn.Upsample(None, decoder_ch_in),
+                    nn.Conv1d(decoder_ch_in, decoder_ch_out, self.kernel_size, stride=stride, padding=15, bias=False)
                 ]
 
-            activation = nn.Tanh() if decoder_ch_out == 1 else nn.GELU()
+            deactivation = nn.Tanh() if decoder_ch_out == 1 else nn.ReLU()
 
             if decoder_ch_out > 1:
-                decode.append(norm(decoder_ch_out))
-                decode.append(activation)
+                decode.append(nn.BatchNorm1d(decoder_ch_out))
+                decode.append(deactivation)
 
             self.decoder.append(nn.Sequential(*decode))
         
@@ -154,8 +162,7 @@ class Autoencoder(nn.Module):
         for index, decode in enumerate(self.decoder):
             encoder_output = saved.pop(-1)
             layer_in = encoder_output
-            if index != 0 and self.skip_op == 'cat':
-                layer_in = self.resolve_skip_op(encoder_output, x)
+            layer_in = self.resolve_skip_op(encoder_output, x)
             x = decode(layer_in)
             
 
